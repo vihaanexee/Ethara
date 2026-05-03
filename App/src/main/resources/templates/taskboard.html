@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Task Board - Kanban view of your project tasks">
+    <title th:text="'Tasks — ' + ${project.name}">Task Board — Team Task Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="/dashboard" class="navbar-brand">&#9889; TaskManager</a>
+        <div class="navbar-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/projects">Projects</a>
+            <a href="/admin" sec:authorize="hasRole('ADMIN')">Admin</a>
+            <div class="user-badge">
+                <div class="user-avatar" th:text="${#strings.substring(userName, 0, 1)}">U</div>
+                <span th:text="${userName}">User</span>
+            </div>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <div class="page-header">
+            <div>
+                <h2 th:text="${project.name}">Project Name</h2>
+                <p style="color: var(--text-secondary); margin-top: 0.3rem;" th:text="${project.description}">Description</p>
+            </div>
+            <div style="display:flex; gap:0.8rem;">
+                <button class="btn-sm btn-outline" onclick="openModal('addMemberModal')">+ Add Member</button>
+                <button class="btn-primary" style="width:auto; padding:0.6rem 1.2rem; font-size:0.85rem;" onclick="openModal('createTaskModal')">+ New Task</button>
+            </div>
+        </div>
+
+        <!-- KANBAN BOARD -->
+        <div class="kanban-board">
+            <!-- TODO -->
+            <div class="kanban-column col-todo">
+                <div class="kanban-column-header">
+                    <span>&#128308; To Do</span>
+                    <span class="count" th:text="${#lists.size(todoTasks)}">0</span>
+                </div>
+                <div th:each="task : ${todoTasks}" th:class="${task.overdue} ? 'task-card overdue' : 'task-card'">
+                    <h4 th:text="${task.title}">Task</h4>
+                    <p class="task-desc" th:text="${task.description}">Desc</p>
+                    <div class="task-meta">
+                        <div class="assignee">
+                            <span>&#128100;</span>
+                            <span th:text="${task.assignedToName}">Unassigned</span>
+                        </div>
+                        <span th:if="${task.dueDate != null}" th:text="${task.dueDate}">Date</span>
+                    </div>
+                    <div style="margin-top:0.6rem;">
+                        <select class="status-select" th:attr="onchange='updateTaskStatus(' + ${task.id} + ', this.value)'">
+                            <option value="TODO" selected>To Do</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="IN_REVIEW">In Review</option>
+                            <option value="DONE">Done</option>
+                        </select>
+                    </div>
+                    <span th:if="${task.overdue}" class="badge badge-overdue" style="margin-top:0.4rem;">OVERDUE</span>
+                </div>
+                <div th:if="${#lists.isEmpty(todoTasks)}" class="empty-state" style="padding:1.5rem;">
+                    <p style="font-size:0.85rem;">No tasks</p>
+                </div>
+            </div>
+
+            <!-- IN PROGRESS -->
+            <div class="kanban-column col-progress">
+                <div class="kanban-column-header">
+                    <span>&#128992; In Progress</span>
+                    <span class="count" th:text="${#lists.size(inProgressTasks)}">0</span>
+                </div>
+                <div th:each="task : ${inProgressTasks}" th:class="${task.overdue} ? 'task-card overdue' : 'task-card'">
+                    <h4 th:text="${task.title}">Task</h4>
+                    <p class="task-desc" th:text="${task.description}">Desc</p>
+                    <div class="task-meta">
+                        <div class="assignee">
+                            <span>&#128100;</span>
+                            <span th:text="${task.assignedToName}">Unassigned</span>
+                        </div>
+                        <span th:if="${task.dueDate != null}" th:text="${task.dueDate}">Date</span>
+                    </div>
+                    <div style="margin-top:0.6rem;">
+                        <select class="status-select" th:attr="onchange='updateTaskStatus(' + ${task.id} + ', this.value)'">
+                            <option value="TODO">To Do</option>
+                            <option value="IN_PROGRESS" selected>In Progress</option>
+                            <option value="IN_REVIEW">In Review</option>
+                            <option value="DONE">Done</option>
+                        </select>
+                    </div>
+                    <span th:if="${task.overdue}" class="badge badge-overdue" style="margin-top:0.4rem;">OVERDUE</span>
+                </div>
+                <div th:if="${#lists.isEmpty(inProgressTasks)}" class="empty-state" style="padding:1.5rem;">
+                    <p style="font-size:0.85rem;">No tasks</p>
+                </div>
+            </div>
+
+            <!-- IN REVIEW -->
+            <div class="kanban-column col-review">
+                <div class="kanban-column-header">
+                    <span>&#128993; In Review</span>
+                    <span class="count" th:text="${#lists.size(inReviewTasks)}">0</span>
+                </div>
+                <div th:each="task : ${inReviewTasks}" th:class="${task.overdue} ? 'task-card overdue' : 'task-card'">
+                    <h4 th:text="${task.title}">Task</h4>
+                    <p class="task-desc" th:text="${task.description}">Desc</p>
+                    <div class="task-meta">
+                        <div class="assignee">
+                            <span>&#128100;</span>
+                            <span th:text="${task.assignedToName}">Unassigned</span>
+                        </div>
+                        <span th:if="${task.dueDate != null}" th:text="${task.dueDate}">Date</span>
+                    </div>
+                    <div style="margin-top:0.6rem;">
+                        <select class="status-select" th:attr="onchange='updateTaskStatus(' + ${task.id} + ', this.value)'">
+                            <option value="TODO">To Do</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="IN_REVIEW" selected>In Review</option>
+                            <option value="DONE">Done</option>
+                        </select>
+                    </div>
+                    <span th:if="${task.overdue}" class="badge badge-overdue" style="margin-top:0.4rem;">OVERDUE</span>
+                </div>
+                <div th:if="${#lists.isEmpty(inReviewTasks)}" class="empty-state" style="padding:1.5rem;">
+                    <p style="font-size:0.85rem;">No tasks</p>
+                </div>
+            </div>
+
+            <!-- DONE -->
+            <div class="kanban-column col-done">
+                <div class="kanban-column-header">
+                    <span>&#9989; Done</span>
+                    <span class="count" th:text="${#lists.size(doneTasks)}">0</span>
+                </div>
+                <div th:each="task : ${doneTasks}" class="task-card">
+                    <h4 th:text="${task.title}">Task</h4>
+                    <p class="task-desc" th:text="${task.description}">Desc</p>
+                    <div class="task-meta">
+                        <div class="assignee">
+                            <span>&#128100;</span>
+                            <span th:text="${task.assignedToName}">Unassigned</span>
+                        </div>
+                        <span th:if="${task.dueDate != null}" th:text="${task.dueDate}">Date</span>
+                    </div>
+                    <div style="margin-top:0.6rem;">
+                        <select class="status-select" th:attr="onchange='updateTaskStatus(' + ${task.id} + ', this.value)'">
+                            <option value="TODO">To Do</option>
+                            <option value="IN_PROGRESS">In Progress</option>
+                            <option value="IN_REVIEW">In Review</option>
+                            <option value="DONE" selected>Done</option>
+                        </select>
+                    </div>
+                </div>
+                <div th:if="${#lists.isEmpty(doneTasks)}" class="empty-state" style="padding:1.5rem;">
+                    <p style="font-size:0.85rem;">No tasks</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADD MEMBER MODAL -->
+    <div id="addMemberModal" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3>Add Team Member</h3>
+                <button class="modal-close" onclick="closeModal('addMemberModal')">&times;</button>
+            </div>
+            <div id="memberAlert" class="alert" style="display:none;"></div>
+            <form th:attr="onsubmit='handleAddMember(event, ' + ${projectId} + ')'">
+                <div class="form-group">
+                    <label for="memberEmail">Member Email</label>
+                    <input type="email" id="memberEmail" class="form-control" placeholder="member@example.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="memberRole">Role</label>
+                    <select id="memberRole" class="form-control">
+                        <option value="MEMBER">Member</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Add Member</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CREATE TASK MODAL -->
+    <div id="createTaskModal" class="modal-overlay">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h3>Create New Task</h3>
+                <button class="modal-close" onclick="closeModal('createTaskModal')">&times;</button>
+            </div>
+            <div id="taskAlert" class="alert" style="display:none;"></div>
+            <form th:attr="onsubmit='handleCreateTask(event, ' + ${projectId} + ')'">
+                <div class="form-group">
+                    <label for="taskTitle">Task Title</label>
+                    <input type="text" id="taskTitle" class="form-control" placeholder="Design homepage" required>
+                </div>
+                <div class="form-group">
+                    <label for="taskDesc">Description</label>
+                    <textarea id="taskDesc" class="form-control" rows="3" placeholder="Task details..." style="resize:vertical; min-height:70px;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="taskDueDate">Due Date</label>
+                    <input type="date" id="taskDueDate" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="taskAssignee">Assign To</label>
+                    <select id="taskAssignee" class="form-control">
+                        <option value="">Unassigned</option>
+                        <option th:each="member : ${members}" th:value="${member.user.id}" th:text="${member.user.name}">Name</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Create Task</button>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/app.js}"></script>
+</body>
+</html>

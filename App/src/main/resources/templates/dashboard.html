@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Dashboard - View your task summary and project overview">
+    <title>Dashboard — Team Task Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <a href="/dashboard" class="navbar-brand">&#9889; TaskManager</a>
+        <div class="navbar-links">
+            <a href="/dashboard" class="active">Dashboard</a>
+            <a href="/projects">Projects</a>
+            <a href="/admin" sec:authorize="hasRole('ADMIN')">Admin</a>
+            <div class="user-badge">
+                <div class="user-avatar" th:text="${#strings.substring(userName, 0, 1)}">U</div>
+                <span th:text="${userName}">User</span>
+            </div>
+            <button class="btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+
+    <div class="page-container">
+        <!-- HEADER -->
+        <div class="page-header">
+            <h2>&#128075; Hello, <span th:text="${userName}">User</span>!</h2>
+        </div>
+
+        <!-- STATS -->
+        <div class="stats-grid">
+            <div class="stat-card glass-card primary">
+                <div class="stat-icon">&#128203;</div>
+                <div class="stat-value" th:text="${summary.totalTasks}">0</div>
+                <div class="stat-label">Total Tasks</div>
+            </div>
+            <div class="stat-card glass-card success">
+                <div class="stat-icon">&#9989;</div>
+                <div class="stat-value" th:text="${summary.completedTasks}">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card glass-card warning">
+                <div class="stat-icon">&#9203;</div>
+                <div class="stat-value" th:text="${summary.pendingTasks}">0</div>
+                <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card glass-card danger">
+                <div class="stat-icon">&#128680;</div>
+                <div class="stat-value" th:text="${summary.overdueTasks}">0</div>
+                <div class="stat-label">Overdue</div>
+            </div>
+        </div>
+
+        <!-- MY TASKS TABLE -->
+        <div class="glass-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem; font-size: 1.2rem;">&#128221; My Tasks</h3>
+            <div th:if="${#lists.isEmpty(myTasks)}" class="empty-state">
+                <div class="icon">&#128466;</div>
+                <h4>No tasks assigned yet</h4>
+                <p>Tasks assigned to you will appear here.</p>
+            </div>
+            <table th:unless="${#lists.isEmpty(myTasks)}" class="task-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Project</th>
+                        <th>Status</th>
+                        <th>Due Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="task : ${myTasks}">
+                        <td th:text="${task.title}">Task</td>
+                        <td th:text="${task.projectName}">Project</td>
+                        <td>
+                            <span class="badge" 
+                                  th:classappend="${task.status == 'TODO'} ? 'badge-todo' : (${task.status == 'IN_PROGRESS'} ? 'badge-progress' : (${task.status == 'IN_REVIEW'} ? 'badge-review' : 'badge-done'))"
+                                  th:text="${task.status}">TODO</span>
+                        </td>
+                        <td>
+                            <span th:if="${task.dueDate != null}" th:text="${task.dueDate}">-</span>
+                            <span th:if="${task.dueDate == null}" style="color: var(--text-secondary);">No due date</span>
+                            <span th:if="${task.overdue}" class="badge badge-overdue" style="margin-left:0.3rem;">OVERDUE</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- OVERDUE SECTION -->
+        <div th:unless="${#lists.isEmpty(overdueTasks)}" class="glass-card" style="padding: 1.5rem; border-color: rgba(220,38,38,0.2);">
+            <h3 style="margin-bottom: 1rem; font-size: 1.2rem; color: #d4d4d4;">&#128680; Overdue Tasks</h3>
+            <table class="task-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Project</th>
+                        <th>Due Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="task : ${overdueTasks}">
+                        <td th:text="${task.title}">Task</td>
+                        <td th:text="${task.projectName}">Project</td>
+                        <td style="color: #a3a3a3;" th:text="${task.dueDate}">-</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script th:src="@{/js/app.js}"></script>
+</body>
+</html>

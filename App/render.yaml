@@ -1,0 +1,37 @@
+# Render Blueprint — Infrastructure as Code
+# Deploy: Connect your GitHub repo to Render and it auto-detects this file.
+
+services:
+  - type: web
+    name: ethara-task-manager
+    runtime: java
+    plan: free
+    buildCommand: ./mvnw clean package -DskipTests -B
+    startCommand: java -Dserver.port=$PORT -jar target/*.jar
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ethara-db
+          property: connectionURI
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: ethara-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: ethara-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DDL_AUTO
+        value: update
+      - key: THYMELEAF_CACHE
+        value: "true"
+      - key: SHOW_SQL
+        value: "false"
+
+databases:
+  - name: ethara-db
+    plan: free
+    databaseName: ethara_taskmanager
+    user: ethara_user
